@@ -421,7 +421,7 @@ public class XServerDisplayActivity extends AppCompatActivity {
     private static final int RESHADE_PULSE_TARGET_PRESENTS = 2;   // real presents to reveal a change
     private static final long RESHADE_PULSE_FALLBACK_MS = 80L;    // re-freeze if the game isn't presenting
     private boolean isRelativeMouseMovement = false;
-    private boolean scrcpyMouseMovement = false;
+    private boolean scrcpyMouseMovement = true;
     private boolean isMouseDisabled = false;
     private boolean pointerCaptureRequested = false;
 
