@@ -421,6 +421,7 @@ public class XServerDisplayActivity extends AppCompatActivity {
     private static final int RESHADE_PULSE_TARGET_PRESENTS = 2;   // real presents to reveal a change
     private static final long RESHADE_PULSE_FALLBACK_MS = 80L;    // re-freeze if the game isn't presenting
     private boolean isRelativeMouseMovement = false;
+    private boolean scrcpyMouseMovement = false;
     private boolean isMouseDisabled = false;
     private boolean pointerCaptureRequested = false;
 
@@ -1935,6 +1936,7 @@ public class XServerDisplayActivity extends AppCompatActivity {
         menuButtonKeyCode = com.winlator.star.ui.components.GlobalControllerPrefs.getMenuButtonKeyCode(this);
 
         cursorLock = preferences.getBoolean("cursor_lock", false);
+        scrcpyMouseMovement = preferences.getBoolean("scrcpy", false);
 
         // Check for Dark Mode
         isDarkMode = preferences.getBoolean("dark_mode", false);
@@ -2015,8 +2017,8 @@ public class XServerDisplayActivity extends AppCompatActivity {
             }
             @Override public void onDrawerClosed(@NonNull View drawerView) {
                 XServerDialogState.INSTANCE.setMenuOpen(false);
-                // If the user left Relative Mouse enabled, recapture.
-                if (isRelativeMouseMovement && !pointerCaptureRequested) {
+                // If the user left Relative Mouse or Scrcpy enabled, recapture.
+                if ((isRelativeMouseMovement || scrcpyMouseMovement) && !pointerCaptureRequested) {
                     drawerLayout.postDelayed(() -> ensurePointerCapture("drawer-closed"), 2000);
                 }
             }
@@ -3346,7 +3348,8 @@ public class XServerDisplayActivity extends AppCompatActivity {
     }
 
     private void ensurePointerCapture(String reason) {
-        if ((!isRelativeMouseMovement && !cursorLock && !waylandPointerLocked) || touchpadView == null || inGameControlsEditor != null) return;
+        if ((!isRelativeMouseMovement && !cursorLock && !waylandPointerLocked && !scrcpyMouseMovement)
+                || touchpadView == null || inGameControlsEditor != null) return;
 
         final int[] tries = {0};
         Runnable attempt = new Runnable() {
@@ -7710,7 +7713,8 @@ public class XServerDisplayActivity extends AppCompatActivity {
         super.onWindowFocusChanged(hasFocus);
         if (hasFocus && waylandClipboard != null) waylandClipboard.refresh();
 
-        if (hasFocus && (cursorLock || isRelativeMouseMovement || waylandPointerLocked) && inGameControlsEditor == null) {
+        if (hasFocus && (cursorLock || isRelativeMouseMovement || waylandPointerLocked || scrcpyMouseMovement)
+                && inGameControlsEditor == null) {
             touchpadView.requestPointerCapture();
             pointerCaptureRequested = true;
             touchpadView.setOnCapturedPointerListener(new View.OnCapturedPointerListener() {
@@ -9028,7 +9032,8 @@ public class XServerDisplayActivity extends AppCompatActivity {
                 ensurePointerCapture("wayland-pointer-lock");
             } else {
                 xServer.injectPointerMove(x, y);
-                if (!isRelativeMouseMovement && !cursorLock && touchpadView != null && pointerCaptureRequested) {
+                if (!isRelativeMouseMovement && !cursorLock && !scrcpyMouseMovement
+                        && touchpadView != null && pointerCaptureRequested) {
                     touchpadView.releasePointerCapture();
                     touchpadView.setOnCapturedPointerListener(null);
                     pointerCaptureRequested = false;
@@ -12716,7 +12721,7 @@ public class XServerDisplayActivity extends AppCompatActivity {
             if (touchpadView != null) touchpadView.setOnTouchListener(null);
         }
         inGameControlsEditor = null;
-        if (isRelativeMouseMovement || cursorLock) {
+        if (isRelativeMouseMovement || cursorLock || scrcpyMouseMovement) {
             inputControlsView.postDelayed(() -> ensurePointerCapture("in-game-controls-editor-closed"), 250);
         }
     }
@@ -17020,8 +17025,6 @@ return true;
 
 
 } // Closes the XServerDisplayActivity class
-
-
 
 
 
